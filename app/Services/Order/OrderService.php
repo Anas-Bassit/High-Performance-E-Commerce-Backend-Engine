@@ -7,7 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Exception;
-
+use App\Jobs\SendOrderNotificationJob;
 class OrderService
 {
     // with lock and trancaction 
@@ -40,6 +40,7 @@ class OrderService
             $product->stock -= $validated['quantity'];
             $product->save();
             DB::commit();
+            SendOrderNotificationJob::dispatch($order->id);
             return $order->load('items');
         } catch (Exception $e) {
             DB::rollBack();
@@ -72,6 +73,7 @@ class OrderService
         ]);
         $product->stock -= $validated['quantity'];
         $product->save();
+        SendOrderNotificationJob::dispatch($order->id);
         return $order->load('items');
     }
 }

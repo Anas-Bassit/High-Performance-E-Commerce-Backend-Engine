@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SimulateOrderJob implements ShouldQueue
 {
@@ -33,7 +34,7 @@ class SimulateOrderJob implements ShouldQueue
                 'product_id' => $this->productId,
                 'quantity' => $this->quantity,
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::info('Order failed: ' . $e->getMessage());
         }
     }
