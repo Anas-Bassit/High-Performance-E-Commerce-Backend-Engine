@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
-// Route::post('/orders/place', [OrderController::class, 'place']);
-
-Route::middleware('throttle:5,1')->group(function () {
-    Route::post('/orders/place', [OrderController::class, 'place']);
-});
+Route::post('/orders/place', [OrderController::class, 'place']);
+// Route::post('/api/placewithout', [OrderController::class , 'placewithout']);
+// Route::middleware('throttle:5,1')->group(function () {
+//     Route::post('/orders/place', [OrderController::class, 'place']);
+// });
 
 Route::get('/simulate', function () {
-    $productId = 3;
+    $productId = 1;
 
     for ($i = 0; $i < 20; $i++) {
         \App\Jobs\SimulateOrderJob::dispatch(1, $productId, 1);
