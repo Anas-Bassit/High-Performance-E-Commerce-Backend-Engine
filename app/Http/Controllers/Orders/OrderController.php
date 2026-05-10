@@ -31,4 +31,57 @@ class OrderController extends Controller
         }
     }
 
+
+    public function placeSync(Request $request, OrderService $orderService)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+
+            $order = $orderService->placeSync($validated);
+
+            return response()->json([
+                'message' => 'Sync order created successfully',
+                'data' => $order,
+            ]);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+
+
+    public function placeAsync(Request $request, OrderService $orderService)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+
+            $order = $orderService->placeAsync($validated);
+
+            return response()->json([
+                'message' => 'Async order created successfully',
+                'data' => $order,
+            ]);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
 }

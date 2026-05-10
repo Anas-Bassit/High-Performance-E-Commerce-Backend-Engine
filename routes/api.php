@@ -22,3 +22,8 @@ Route::get('/simulate', function () {
 
     return 'Simulation started';
 });
+
+
+Route::post('/orders/place-sync', [OrderController::class, 'placeSync']);
+
+Route::post('/orders/place-async', [OrderController::class, 'placeAsync']);
