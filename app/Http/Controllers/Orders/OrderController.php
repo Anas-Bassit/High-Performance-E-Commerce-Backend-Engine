@@ -30,6 +30,27 @@ class OrderController extends Controller
             ], 400);
         }
     }
+     public function placewithout(Request $request, OrderService $orderService)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $order = $orderService->placewithout($validated);
+
+            return response()->json([
+                'message' => 'Order created successfully',
+                'data' => $order,
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
 
 
     public function placeSync(Request $request, OrderService $orderService)

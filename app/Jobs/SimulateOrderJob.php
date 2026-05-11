@@ -29,7 +29,7 @@ class SimulateOrderJob implements ShouldQueue
     public function handle(OrderService $orderService)
     {
         try {
-            $orderService->placewithout([
+            $orderService->place([
                 'user_id' => $this->userId,
                 'product_id' => $this->productId,
                 'quantity' => $this->quantity,
