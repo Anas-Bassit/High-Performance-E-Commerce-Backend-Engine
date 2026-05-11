@@ -27,3 +27,9 @@ Route::get('/simulate', function () {
 Route::post('/orders/place-sync', [OrderController::class, 'placeSync']);
 
 Route::post('/orders/place-async', [OrderController::class, 'placeAsync']);
+
+
+Route::get('/test-job', function () {
+    dispatch(new \App\Jobs\DispatchDailySalesJobs);
+    return 'Job Dispatched';
+});

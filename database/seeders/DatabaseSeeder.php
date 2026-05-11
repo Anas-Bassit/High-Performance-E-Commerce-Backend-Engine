@@ -16,12 +16,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Test User',
+        //     'email' => 'test@example.com',
+        // ]);
         Product::create([
             'name' => 'First Product',
             'description' => 'This is a First product.',
@@ -39,6 +39,9 @@ class DatabaseSeeder extends Seeder
             'description' => 'This is a Third product.',
             'price' => 39.99,
             'stock' => 25,
+        ]);
+        $this->call([
+            OrderSeeder::class,
         ]);
     }
 }
