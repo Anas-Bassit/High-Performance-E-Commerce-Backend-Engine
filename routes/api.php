@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Orders\OrderController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -16,8 +17,10 @@ Route::middleware('throttle:5,1')->group(function () {
 Route::get('/simulate', function () {
     $productId = 3;
 
-    for ($i = 0; $i < 20; $i++) {
+    for ($i = 0; $i < 3; $i++) {
         \App\Jobs\SimulateOrderJob::dispatch(1, $productId, 1);
+        $instance = env('APP_INSTANCE');
+        Log::info("Request handled by {$instance}");
     }
 
     return 'Simulation started';
