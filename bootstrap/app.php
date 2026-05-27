@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\PerformanceMonitoringMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('sales:process')->daily();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->append(PerformanceMonitoringMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
