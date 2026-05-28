@@ -1,0 +1,77 @@
+services:
+  load_balancer:
+    image: nginx:latest
+    container_name: ecommerce_load_balancer
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docker/nginx/load-balancer.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app1
+      - app2
+      - app3
+
+  app1:
+    hostname: app1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_app_1
+    environment:
+      APP_INSTANCE: app-1
+      APP_ENV: local
+      APP_DEBUG: true
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: mysql
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_DATABASE: high-performance
+      DB_USERNAME: root
+      DB_PASSWORD: anas1234
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  app2:
+    hostname: app2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_app_2
+    environment:
+      APP_INSTANCE: app-2
+      APP_ENV: local
+      APP_DEBUG: true
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: mysql
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_DATABASE: high-performance
+      DB_USERNAME: root
+      DB_PASSWORD: anas1234
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  app3:
+    hostname: app3
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_app_3
+    environment:
+      APP_INSTANCE: app-3
+      APP_ENV: local
+      APP_DEBUG: true
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: mysql
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_DATABASE: high-performance
+      DB_USERNAME: root
+      DB_PASSWORD: anas1234
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+    command: php artisan serve --host=0.0.0.0 --port=8000

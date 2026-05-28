@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Orders\OrderController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -32,4 +33,25 @@ Route::post('/orders/place-async', [OrderController::class, 'placeAsync']);
 Route::get('/test-job', function () {
     dispatch(new \App\Jobs\DispatchDailySalesJobs);
     return 'Job Dispatched';
+});
+Route::get('/health', function () {
+    $instance = getenv('APP_INSTANCE');
+
+    return response()->json([
+        'status' => 'healthy',
+        'instance' => $instance ?: gethostname(),
+        'hostname' => gethostname(),
+        'time' => now()->toDateTimeString(),
+    ]);
+});
+
+Route::get('/server-info', function () {
+    $instance = getenv('APP_INSTANCE');
+
+    return response()->json([
+        'instance' => $instance ?: gethostname(),
+        'hostname' => gethostname(),
+        'pid' => getmypid(),
+        'time' => now()->toDateTimeString(),
+    ]);
 });
