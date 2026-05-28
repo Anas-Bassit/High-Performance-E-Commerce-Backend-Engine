@@ -25,7 +25,7 @@ class LoadBalancerService
     $server = $this->servers[$this->currentIndex];
 
     $server->handle($userId, $productId, $quantity);
-    if ($this->currentIndex == 2) {
+    if ($this->currentIndex == count($this->servers) - 1) {
       $this->currentIndex = 0;
     } else {
       $this->currentIndex++;
