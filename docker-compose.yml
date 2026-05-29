@@ -27,10 +27,11 @@ services:
       DB_PORT: 3306
       DB_DATABASE: high-performance
       DB_USERNAME: root
-      DB_PASSWORD: anas1234
+      DB_PASSWORD: ${DB_PASSWORD}
       CACHE_STORE: database
       QUEUE_CONNECTION: database
-
+    volumes:
+    - ./.env.docker:/var/www/html/.env:ro
     command: php artisan serve --host=0.0.0.0 --port=8000
 
   app2:
@@ -49,10 +50,11 @@ services:
       DB_PORT: 3306
       DB_DATABASE: high-performance
       DB_USERNAME: root
-      DB_PASSWORD: anas1234
+      DB_PASSWORD: ${DB_PASSWORD}
       CACHE_STORE: database
       QUEUE_CONNECTION: database
-
+    volumes:
+    - ./.env.docker:/var/www/html/.env:ro
     command: php artisan serve --host=0.0.0.0 --port=8000
 
   app3:
@@ -71,7 +73,9 @@ services:
       DB_PORT: 3306
       DB_DATABASE: high-performance
       DB_USERNAME: root
-      DB_PASSWORD: anas1234
+      DB_PASSWORD: ${DB_PASSWORD}
       CACHE_STORE: database
       QUEUE_CONNECTION: database
+    volumes:
+    - ./.env.docker:/var/www/html/.env:ro
     command: php artisan serve --host=0.0.0.0 --port=8000

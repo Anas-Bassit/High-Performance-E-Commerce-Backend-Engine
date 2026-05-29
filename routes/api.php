@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Orders\OrderController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -13,7 +13,9 @@ Route::post('/orders/place', [OrderController::class, 'place']);
 // Route::middleware('throttle:5,1')->group(function () {
 //     Route::post('/orders/place', [OrderController::class, 'place']);
 // });
-
+Route::post('/orders/place-with-lock', [OrderController::class, 'placewithout']);
+Route::post('/orders/place-without-lock', [OrderController::class, 'PlaceWithLock']);
+Route::post('/orders/transaction-test', [OrderController::class, 'placeTransactionTest']);
 Route::get('/simulate', function () {
     $productId = 1;
 
@@ -53,5 +55,16 @@ Route::get('/server-info', function () {
         'hostname' => gethostname(),
         'pid' => getmypid(),
         'time' => now()->toDateTimeString(),
+    ]);
+});
+
+Route::get('/debug-db', function () {
+    return response()->json([
+        'hostname' => gethostname(),
+        'app_instance' => getenv('APP_INSTANCE') ?: 'missing',
+        'config_driver' => config('database.default'),
+        'real_driver' => DB::connection()->getDriverName(),
+        'database_name' => DB::connection()->getDatabaseName(),
+        'db_host' => config('database.connections.mysql.host'),
     ]);
 });

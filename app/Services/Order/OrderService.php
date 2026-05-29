@@ -124,7 +124,6 @@ class OrderService
             DB::commit();
 
             return $order->load('items');
-
         } catch (Exception $e) {
 
             DB::rollBack();
@@ -157,9 +156,88 @@ class OrderService
     }
 
 
+    public function placeWithPessimisticLock(array $validated): Order
+    {
+        return DB::transaction(function () use ($validated) {
+            $product = Product::where('id', $validated['product_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$product) {
+                throw new Exception('Product not found');
+            }
+
+            if ($product->stock < $validated['quantity']) {
+                throw new Exception('Insufficient stock');
+            }
+
+            $totalPrice = $product->price * $validated['quantity'];
+
+            $order = Order::create([
+                'user_id' => $validated['user_id'],
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+            ]);
+
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'quantity' => $validated['quantity'],
+                'unit_price' => $product->price,
+            ]);
+
+            $product->stock -= $validated['quantity'];
+            $product->save();
+
+            SendOrderNotificationJob::dispatch($order->id);
+
+            return $order->load('items');
+        }, 3);
+    }
 
 
 
 
 
+    public function placeWithTransactionIntegrityTest(array $validated, bool $simulateFailure = false): Order
+    {
+        return DB::transaction(function () use ($validated, $simulateFailure) {
+
+            $product = Product::where('id', $validated['product_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$product) {
+                throw new Exception('Product not found');
+            }
+
+            if ($product->stock < $validated['quantity']) {
+                throw new Exception('Insufficient stock');
+            }
+
+            $totalPrice = $product->price * $validated['quantity'];
+
+            $order = Order::create([
+                'user_id' => $validated['user_id'],
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+            ]);
+
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'quantity' => $validated['quantity'],
+                'unit_price' => $product->price,
+            ]);
+
+            $product->stock -= $validated['quantity'];
+            $product->save();
+
+            if ($simulateFailure) {
+                throw new Exception('Simulated failure after order creation and stock update');
+            }
+
+            return $order->load('items');
+        }, 3);
+    }
 }
