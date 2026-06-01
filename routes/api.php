@@ -14,7 +14,7 @@ Route::post('/orders/place', [OrderController::class, 'place']);
 //     Route::post('/orders/place', [OrderController::class, 'place']);
 // });
 Route::post('/orders/place-with-lock', [OrderController::class, 'placewithout']);
-Route::post('/orders/place-without-lock', [OrderController::class, 'PlaceWithLock']);
+Route::post('/orders/place-distributed-lock', [OrderController::class, 'placeDistributedLock']);
 Route::post('/orders/transaction-test', [OrderController::class, 'placeTransactionTest']);
 Route::get('/simulate', function () {
     $productId = 1;
@@ -66,5 +66,14 @@ Route::get('/debug-db', function () {
         'real_driver' => DB::connection()->getDriverName(),
         'database_name' => DB::connection()->getDatabaseName(),
         'db_host' => config('database.connections.mysql.host'),
+    ]);
+});
+Route::get('/debug-redis', function () {
+    return response()->json([
+        'hostname' => gethostname(),
+        'redis_client' => config('database.redis.client'),
+        'cache_default' => config('cache.default'),
+        'redis_host' => config('database.redis.default.host'),
+        'redis_port' => config('database.redis.default.port'),
     ]);
 });

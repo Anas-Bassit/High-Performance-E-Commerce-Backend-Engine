@@ -102,7 +102,7 @@ class OrderController extends Controller
             ], 400);
         }
     }
-    public function PlaceWithLock(Request $request, OrderService $orderService)
+    public function placeDistributedLock(Request $request, OrderService $orderService)
     {
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
@@ -111,18 +111,19 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order = $orderService->placeWithPessimisticLock($validated);
+            $order = $orderService->placeWithDistributedLock($validated);
 
             return response()->json([
-                'message' => 'Order created successfully with lock',
+                'message' => 'Order created successfully with distributed lock',
                 'data' => $order,
             ], 201);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ], 400);
         }
     }
+
     public function placeTransactionTest(Request $request, OrderService $orderService)
     {
         $validated = $request->validate([

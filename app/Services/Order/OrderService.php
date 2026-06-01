@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Exception;
 use App\Jobs\SendOrderNotificationJob;
 use App\Services\Invoice\InvoiceService;
-
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 class OrderService
 {
     // with lock and trancaction
@@ -156,45 +157,50 @@ class OrderService
     }
 
 
-    public function placeWithPessimisticLock(array $validated): Order
+    public function placeWithDistributedLock(array $validated): Order
     {
-        return DB::transaction(function () use ($validated) {
-            $product = Product::where('id', $validated['product_id'])
-                ->lockForUpdate()
-                ->first();
+        $lockKey = 'product-order-lock-' . $validated['product_id'];
 
-            if (!$product) {
-                throw new Exception('Product not found');
-            }
+        try {
+            return Cache::lock($lockKey, 10)->block(5, function () use ($validated) {
+                return DB::transaction(function () use ($validated) {
+                    $product = Product::where('id', $validated['product_id'])
+                        ->lockForUpdate()
+                        ->first();
 
-            if ($product->stock < $validated['quantity']) {
-                throw new Exception('Insufficient stock');
-            }
+                    if (!$product) {
+                        throw new \Exception('Product not found');
+                    }
 
-            $totalPrice = $product->price * $validated['quantity'];
+                    if ($product->stock < $validated['quantity']) {
+                        throw new \Exception('Insufficient stock');
+                    }
 
-            $order = Order::create([
-                'user_id' => $validated['user_id'],
-                'total_price' => $totalPrice,
-                'status' => 'pending',
-            ]);
+                    $totalPrice = $product->price * $validated['quantity'];
 
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $validated['quantity'],
-                'unit_price' => $product->price,
-            ]);
+                    $order = Order::create([
+                        'user_id' => $validated['user_id'],
+                        'total_price' => $totalPrice,
+                        'status' => 'pending',
+                    ]);
 
-            $product->stock -= $validated['quantity'];
-            $product->save();
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $product->id,
+                        'quantity' => $validated['quantity'],
+                        'unit_price' => $product->price,
+                    ]);
 
-            SendOrderNotificationJob::dispatch($order->id);
+                    $product->stock -= $validated['quantity'];
+                    $product->save();
 
-            return $order->load('items');
-        }, 3);
+                    return $order->load('items');
+                }, 3);
+            });
+        } catch (LockTimeoutException $e) {
+            throw new \Exception('Could not acquire distributed lock. Please retry.');
+        }
     }
-
 
 
 
