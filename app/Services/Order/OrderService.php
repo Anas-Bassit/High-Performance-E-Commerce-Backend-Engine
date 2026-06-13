@@ -12,6 +12,7 @@ use App\Jobs\SendOrderNotificationJob;
 use App\Services\Invoice\InvoiceService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+
 class OrderService
 {
     // with lock and trancaction
@@ -42,8 +43,10 @@ class OrderService
                 'unit_price' => $product->price,
             ]);
             $product->stock -= $validated['quantity'];
+            $product->sold_count += $validated['quantity'];
             $product->save();
             DB::commit();
+            $this->clearPopularProductsCache();
             SendOrderNotificationJob::dispatch($order->id);
             return $order->load('items');
         } catch (Exception $e) {
@@ -76,7 +79,9 @@ class OrderService
             'unit_price' => $product->price,
         ]);
         $product->stock -= $validated['quantity'];
+        $product->sold_count += $validated['quantity'];
         $product->save();
+        $this->clearPopularProductsCache();
         SendOrderNotificationJob::dispatch($order->id);
         return $order->load('items');
     }
@@ -120,9 +125,11 @@ class OrderService
             ]);
 
             $product->stock -= $validated['quantity'];
+            $product->sold_count += $validated['quantity'];
             $product->save();
 
             DB::commit();
+            $this->clearPopularProductsCache();
 
             return $order->load('items');
         } catch (Exception $e) {
@@ -163,7 +170,7 @@ class OrderService
 
         try {
             return Cache::lock($lockKey, 10)->block(5, function () use ($validated) {
-                return DB::transaction(function () use ($validated) {
+                $order = DB::transaction(function () use ($validated) {
                     $product = Product::where('id', $validated['product_id'])
                         ->lockForUpdate()
                         ->first();
@@ -192,10 +199,15 @@ class OrderService
                     ]);
 
                     $product->stock -= $validated['quantity'];
+                    $product->sold_count += $validated['quantity'];
                     $product->save();
 
                     return $order->load('items');
                 }, 3);
+
+                $this->clearPopularProductsCache();
+
+                return $order;
             });
         } catch (LockTimeoutException $e) {
             throw new \Exception('Could not acquire distributed lock. Please retry.');
@@ -207,7 +219,7 @@ class OrderService
 
     public function placeWithTransactionIntegrityTest(array $validated, bool $simulateFailure = false): Order
     {
-        return DB::transaction(function () use ($validated, $simulateFailure) {
+        $order = DB::transaction(function () use ($validated, $simulateFailure) {
 
             $product = Product::where('id', $validated['product_id'])
                 ->lockForUpdate()
@@ -237,6 +249,7 @@ class OrderService
             ]);
 
             $product->stock -= $validated['quantity'];
+            $product->sold_count += $validated['quantity'];
             $product->save();
 
             if ($simulateFailure) {
@@ -245,5 +258,11 @@ class OrderService
 
             return $order->load('items');
         }, 3);
+        $this->clearPopularProductsCache();
+        return $order;
+    }
+    private function clearPopularProductsCache(): void
+    {
+        Cache::forget('products:popular');
     }
 }

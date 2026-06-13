@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\Products\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -77,3 +78,7 @@ Route::get('/debug-redis', function () {
         'redis_port' => config('database.redis.default.port'),
     ]);
 });
+
+Route::get('/products/popular-no-cache', [ProductController::class, 'popularNoCache']);
+Route::get('/products/popular', [ProductController::class, 'popular']);
+Route::delete('/products/cache/popular', [ProductController::class, 'clearPopularCache']);
