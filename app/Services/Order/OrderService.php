@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Exception;
 use App\Jobs\SendOrderNotificationJob;
 use App\Services\Invoice\InvoiceService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 
 class OrderService
 {
@@ -41,8 +43,10 @@ class OrderService
                 'unit_price' => $product->price,
             ]);
             $product->stock -= $validated['quantity'];
+            $product->sold_count += $validated['quantity'];
             $product->save();
             DB::commit();
+            $this->clearPopularProductsCache();
             SendOrderNotificationJob::dispatch($order->id);
             return $order->load('items');
         } catch (Exception $e) {
@@ -75,7 +79,9 @@ class OrderService
             'unit_price' => $product->price,
         ]);
         $product->stock -= $validated['quantity'];
+        $product->sold_count += $validated['quantity'];
         $product->save();
+        $this->clearPopularProductsCache();
         SendOrderNotificationJob::dispatch($order->id);
         return $order->load('items');
     }
@@ -119,12 +125,13 @@ class OrderService
             ]);
 
             $product->stock -= $validated['quantity'];
+            $product->sold_count += $validated['quantity'];
             $product->save();
 
             DB::commit();
+            $this->clearPopularProductsCache();
 
             return $order->load('items');
-
         } catch (Exception $e) {
 
             DB::rollBack();
@@ -157,9 +164,105 @@ class OrderService
     }
 
 
+    public function placeWithDistributedLock(array $validated): Order
+    {
+        $lockKey = 'product-order-lock-' . $validated['product_id'];
+
+        try {
+            return Cache::lock($lockKey, 10)->block(5, function () use ($validated) {
+                $order = DB::transaction(function () use ($validated) {
+                    $product = Product::where('id', $validated['product_id'])
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$product) {
+                        throw new \Exception('Product not found');
+                    }
+
+                    if ($product->stock < $validated['quantity']) {
+                        throw new \Exception('Insufficient stock');
+                    }
+
+                    $totalPrice = $product->price * $validated['quantity'];
+
+                    $order = Order::create([
+                        'user_id' => $validated['user_id'],
+                        'total_price' => $totalPrice,
+                        'status' => 'pending',
+                    ]);
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $product->id,
+                        'quantity' => $validated['quantity'],
+                        'unit_price' => $product->price,
+                    ]);
+
+                    $product->stock -= $validated['quantity'];
+                    $product->sold_count += $validated['quantity'];
+                    $product->save();
+
+                    return $order->load('items');
+                }, 3);
+
+                $this->clearPopularProductsCache();
+
+                return $order;
+            });
+        } catch (LockTimeoutException $e) {
+            throw new \Exception('Could not acquire distributed lock. Please retry.');
+        }
+    }
 
 
 
 
+    public function placeWithTransactionIntegrityTest(array $validated, bool $simulateFailure = false): Order
+    {
+        $order = DB::transaction(function () use ($validated, $simulateFailure) {
 
+            $product = Product::where('id', $validated['product_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$product) {
+                throw new Exception('Product not found');
+            }
+
+            if ($product->stock < $validated['quantity']) {
+                throw new Exception('Insufficient stock');
+            }
+
+            $totalPrice = $product->price * $validated['quantity'];
+
+            $order = Order::create([
+                'user_id' => $validated['user_id'],
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+            ]);
+
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'quantity' => $validated['quantity'],
+                'unit_price' => $product->price,
+            ]);
+
+            $product->stock -= $validated['quantity'];
+            $product->sold_count += $validated['quantity'];
+            $product->save();
+
+            if ($simulateFailure) {
+                throw new Exception('Simulated failure after order creation and stock update');
+            }
+
+            return $order->load('items');
+        }, 3);
+        $this->clearPopularProductsCache();
+        return $order;
+    }
+    private function clearPopularProductsCache(): void
+    {
+        Cache::forget('products:popular');
+    }
 }

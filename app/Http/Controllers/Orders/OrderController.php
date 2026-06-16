@@ -30,7 +30,7 @@ class OrderController extends Controller
             ], 400);
         }
     }
-     public function placewithout(Request $request, OrderService $orderService)
+    public function placewithout(Request $request, OrderService $orderService)
     {
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
@@ -69,7 +69,6 @@ class OrderController extends Controller
                 'message' => 'Sync order created successfully',
                 'data' => $order,
             ]);
-
         } catch (Exception $e) {
 
             return response()->json([
@@ -96,7 +95,6 @@ class OrderController extends Controller
                 'message' => 'Async order created successfully',
                 'data' => $order,
             ]);
-
         } catch (Exception $e) {
 
             return response()->json([
@@ -104,5 +102,51 @@ class OrderController extends Controller
             ], 400);
         }
     }
+    public function placeDistributedLock(Request $request, OrderService $orderService)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
 
+        try {
+            $order = $orderService->placeWithDistributedLock($validated);
+
+            return response()->json([
+                'message' => 'Order created successfully with distributed lock',
+                'data' => $order,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function placeTransactionTest(Request $request, OrderService $orderService)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'simulate_failure' => ['nullable', 'boolean'],
+        ]);
+
+        try {
+            $order = $orderService->placeWithTransactionIntegrityTest(
+                $validated,
+                $request->boolean('simulate_failure')
+            );
+
+            return response()->json([
+                'message' => 'Order created successfully using transaction integrity',
+                'data' => $order,
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
 }

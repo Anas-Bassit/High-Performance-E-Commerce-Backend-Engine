@@ -1,0 +1,1 @@
+docker exec -it ecommerce_app_1 php artisan tinker --execute='DB::table("order_items")->delete(); DB::table("orders")->delete(); $p=\App\Models\Product::find(1); $p->stock=5; $p->save(); dump($p->stock); dump(\App\Models\Order::count());'
