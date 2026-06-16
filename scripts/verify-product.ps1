@@ -1,0 +1,1 @@
+docker exec -it ecommerce_app_1 php artisan tinker --execute='dump(\App\Models\Product::find(1)->stock); dump(\App\Models\Order::count());'
