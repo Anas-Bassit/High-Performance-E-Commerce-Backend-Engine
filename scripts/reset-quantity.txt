@@ -28,3 +28,9 @@ Illuminate\Support\Facades\Cache::forget('products:popular');
     'orders_count' => App\Models\Order::count(),
     'order_items_quantity_sum' => App\Models\OrderItem::where('product_id', 2)->sum('quantity'),
 ]
+
+//test transaction in docker
+curl.exe -i -X POST http://localhost:8080/api/orders/transaction-test `
+  -H "Content-Type: application/json" `
+  -H "Accept: application/json" `
+  -d '{"user_id":1,"product_id":2,"quantity":1,"simulate_failure":false}'
