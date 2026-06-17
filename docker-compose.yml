@@ -44,6 +44,8 @@ services:
       REDIS_PASSWORD: null
     volumes:
       - ./.env.docker:/var/www/html/.env:ro
+      - ./docker-logs/app1:/var/www/html/storage/logs
+
     depends_on:
       - redis
     extra_hosts:
@@ -78,6 +80,8 @@ services:
       REDIS_PASSWORD: null
     volumes:
       - ./.env.docker:/var/www/html/.env:ro
+      - ./docker-logs/app2:/var/www/html/storage/logs
+
     depends_on:
       - redis
     extra_hosts:
@@ -112,6 +116,8 @@ services:
       REDIS_PASSWORD: null
     volumes:
       - ./.env.docker:/var/www/html/.env:ro
+      - ./docker-logs/app3:/var/www/html/storage/logs
+
     depends_on:
       - redis
     extra_hosts:

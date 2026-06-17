@@ -3,74 +3,26 @@
 namespace App\Http\Controllers\Products;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
+use App\Services\Product\ProductService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
-    private const POPULAR_PRODUCTS_CACHE_KEY = 'products:popular';
-    private const POPULAR_PRODUCTS_CACHE_TTL = 60;
-
-    public function popularNoCache(): JsonResponse
+    public function popularNoCache(ProductService $productService): JsonResponse
     {
-        $start = microtime(true);
 
-        $products = Product::query()
-            ->orderByDesc('sold_count')
-            ->orderByDesc('id')
-            ->limit(10)
-            ->get();
-
-        $durationMs = round((microtime(true) - $start) * 1000, 2);
-
-        return response()->json([
-            'source' => 'database',
-            'cached' => false,
-            'duration_ms' => $durationMs,
-            'products' => $products,
-        ]);
+        return response()->json($productService->popularNoCache());
     }
 
-    public function popular(): JsonResponse
+    public function popular(ProductService $productService): JsonResponse
     {
-        $start = microtime(true);
 
-        $wasCached = Cache::has(self::POPULAR_PRODUCTS_CACHE_KEY);
-
-        $products = Cache::remember(
-            self::POPULAR_PRODUCTS_CACHE_KEY,
-            self::POPULAR_PRODUCTS_CACHE_TTL,
-            function () {
-                Log::info('Cache miss: loading popular products from database');
-
-                return Product::query()
-                    ->orderByDesc('sold_count')
-                    ->limit(10)
-                    ->get();
-            }
-        );
-
-        $durationMs = round((microtime(true) - $start) * 1000, 2);
-
-        return response()->json([
-            'source' => $wasCached ? 'redis_cache' : 'database_then_cached',
-            'cached' => $wasCached,
-            'cache_key' => self::POPULAR_PRODUCTS_CACHE_KEY,
-            'ttl_seconds' => self::POPULAR_PRODUCTS_CACHE_TTL,
-            'duration_ms' => $durationMs,
-            'products' => $products,
-        ]);
+        return response()->json($productService->popular());
     }
 
-    public function clearPopularCache(): JsonResponse
+    public function clearPopularCache(ProductService $productService): JsonResponse
     {
-        Cache::forget(self::POPULAR_PRODUCTS_CACHE_KEY);
 
-        return response()->json([
-            'message' => 'Popular products cache cleared successfully',
-            'cache_key' => self::POPULAR_PRODUCTS_CACHE_KEY,
-        ]);
+        return response()->json($productService->clearPopularCache());
     }
 }

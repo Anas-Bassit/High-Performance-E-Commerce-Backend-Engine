@@ -1,0 +1,30 @@
+//reset quantity
+docker compose exec app3 php artisan tinker    
+DB::statement('SET FOREIGN_KEY_CHECKS=0');
+DB::table('order_items')->truncate();
+DB::table('orders')->truncate();
+DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+App\Models\User::firstOrCreate(
+    ['id' => 1],
+    [
+        'name' => 'Stress Test User',
+        'email' => 'stress@test.com',
+        'password' => bcrypt('password'),
+    ]
+);
+
+App\Models\Product::where('id', 2)->update([
+    'stock' => 100,
+    'sold_count' => 0,
+]);
+
+Illuminate\Support\Facades\Cache::forget('products:popular');
+
+
+//to check db in docker
+[
+    'product' => App\Models\Product::find(2)->only(['id', 'stock', 'sold_count']),
+    'orders_count' => App\Models\Order::count(),
+    'order_items_quantity_sum' => App\Models\OrderItem::where('product_id', 2)->sum('quantity'),
+]
