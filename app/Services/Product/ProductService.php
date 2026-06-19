@@ -17,7 +17,6 @@ class ProductService
 
         $products = Product::query()
             ->orderByDesc('sold_count')
-            ->orderByDesc('id')
             ->limit(10)
             ->get();
 

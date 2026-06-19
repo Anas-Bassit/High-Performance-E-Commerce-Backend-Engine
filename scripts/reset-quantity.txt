@@ -1,3 +1,36 @@
+//5-loadbalancer test
+curl.exe http://localhost:8080/api/server-info
+curl.exe http://localhost:8080/api/server-info
+curl.exe http://localhost:8080/api/server-info
+
+//6-redis cache test
+curl.exe -X DELETE http://localhost:8080/api/products/cache/popular
+
+curl.exe http://localhost:8080/api/products/popular-no-cache
+curl.exe http://localhost:8080/api/products/popular
+curl.exe http://localhost:8080/api/products/popular
+
+//7-race condition
+docker run --rm -v "${PWD}\scripts:/scripts" grafana/k6 run /scripts/stress-test.js
+[
+    'product' => App\Models\Product::find(2)->only(['id', 'stock', 'sold_count']),
+    'orders_count' => App\Models\Order::count(),
+    'order_items_quantity_sum' => App\Models\OrderItem::where('product_id', 2)->sum('quantity'),
+]
+//8-transaction integrity
+curl.exe -i -X POST http://localhost:8080/api/orders/transaction-test `
+  -H "Content-Type: application/json" `
+  -H "Accept: application/json" `
+  -d '{"user_id":1,"product_id":2,"quantity":1,"simulate_failure":false}'
+
+// 9- stress testing 
+docker run --rm -v "${PWD}\scripts:/scripts" grafana/k6 run /scripts/stress-test.js
+
+//10-benchmarking
+.\scripts\benchmark-products.ps1
+
+
+
 //reset quantity
 docker compose exec app3 php artisan tinker    
 DB::statement('SET FOREIGN_KEY_CHECKS=0');
@@ -21,10 +54,3 @@ App\Models\Product::where('id', 2)->update([
 
 Illuminate\Support\Facades\Cache::forget('products:popular');
 
-
-//to check db in docker
-[
-    'product' => App\Models\Product::find(2)->only(['id', 'stock', 'sold_count']),
-    'orders_count' => App\Models\Order::count(),
-    'order_items_quantity_sum' => App\Models\OrderItem::where('product_id', 2)->sum('quantity'),
-]
